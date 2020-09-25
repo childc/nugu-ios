@@ -23,6 +23,19 @@ import AVFoundation
 import NuguCore
 
 final class ASRBeepPlayer {
+    private let beepQueue = DispatchQueue(label: "com.sktelecom.romaine.beep_player")
+    private lazy var startBeepPlayer: AVAudioPlayer? = {
+        guard let startBeepUrl = Bundle.main.url(forResource: BeepType.start.fileName, withExtension: BeepType.start.extention) else { return nil }
+        return try? AVAudioPlayer(contentsOf: startBeepUrl, fileTypeHint: BeepType.start.fileTypeHint)
+    }()
+    private let successBeepPlayer: AVAudioPlayer? = {
+        guard let successBeepUrl = Bundle.main.url(forResource: BeepType.success.fileName, withExtension: BeepType.success.extention) else { return nil }
+        return try? AVAudioPlayer(contentsOf: successBeepUrl, fileTypeHint: BeepType.success.fileTypeHint)
+    }()
+    private let failBeepPlayer: AVAudioPlayer? = {
+        guard let failBeepUrl = Bundle.main.url(forResource: BeepType.fail.fileName, withExtension: BeepType.fail.extention) else { return nil }
+        return try? AVAudioPlayer(contentsOf: failBeepUrl, fileTypeHint: BeepType.fail.fileTypeHint)
+    }()
     private let focusManager: FocusManageable
     
     init(focusManager: FocusManageable) {
@@ -87,15 +100,22 @@ final class ASRBeepPlayer {
 
 private extension ASRBeepPlayer {
     func play(type: BeepType) {
-        guard let url = Bundle.main.url(forResource: type.fileName, withExtension: type.extention) else {
-            log.error("Can't find sound file")
-            return
-        }
-        do {
-            player = try AVAudioPlayer(contentsOf: url, fileTypeHint: type.fileTypeHint)
-            player?.play()
-        } catch {
-            log.error("Failed to play local beep file : \(error.localizedDescription)")
+        beepQueue.async { [weak self] in
+            switch type {
+            case .fail:
+                if self?.failBeepPlayer?.isPlaying == false {
+                    self?.failBeepPlayer?.play()
+                }
+
+            case .start:
+                if self?.startBeepPlayer?.isPlaying == false {
+                    self?.startBeepPlayer?.play()
+                }
+            case .success:
+                if self?.successBeepPlayer?.isPlaying == false {
+                    self?.successBeepPlayer?.play()
+                }
+            }
         }
     }
 }
