@@ -20,7 +20,9 @@
 
 import UIKit
 import MediaPlayer
+import MessageUI
 
+import NuguCore
 import NuguAgents
 import NuguClientKit
 import NuguUIKit
@@ -180,6 +182,10 @@ private extension MainViewController {
     func initializeNugu() {
         // keyword detector delegate
         NuguCentralManager.shared.client.keywordDetector.delegate = self
+        
+        // message and phone call delegates
+        NuguCentralManager.shared.client.phoneCallAgent.delegate = self
+        NuguCentralManager.shared.client.messageAgent.delegate = self
         
         // Observers
         addAsrAgentObserver(NuguCentralManager.shared.client.asrAgent)
@@ -402,5 +408,59 @@ private extension MainViewController {
                 break
             }
         }
+    }
+}
+
+// MARK: - NuguAgent delegates
+
+extension MainViewController: PhoneCallAgentDelegate {
+    func phoneCallAgentRequestContext() -> PhoneCallContext {
+        return PhoneCallContext(
+            state: .idle,
+            template: nil,
+            recipient: nil
+        )
+    }
+    
+    func phoneCallAgentDidReceiveSendCandidates(item: PhoneCallCandidatesItem, header: Downstream.Header) {
+        log.debug("phoneCallAgentDidReceiveSendCandidates, item: \(item)")
+    }
+    
+    func phoneCallAgentDidReceiveMakeCall(callType: PhoneCallType, recipient: PhoneCallPerson, header: Downstream.Header) -> PhoneCallErrorCode? {
+        guard .callar != callType else {
+            return .callTypeNotSupported
+        }
+        
+        guard let address = recipient.address,
+            let phoneCallUrl = URL(string: "tel://\(address)"),
+              UIApplication.shared.canOpenURL(phoneCallUrl) else { return .noSystemPermission }
+        
+        UIApplication.shared.open(phoneCallUrl, options: [:]) { (success) in
+            log.debug("making phone call \(success)")
+        }
+        
+        return nil
+    }
+}
+
+extension MainViewController: MessageAgentDelegate {
+    func messageAgentRequestContext() -> MessageAgentContext? {
+        return nil
+    }
+    
+    func messageAgentDidReceiveSendCandidates(item: MessageCandidatesItem, header: Downstream.Header) {
+        log.debug("messageAgentDidReceiveSendCandidates, item: \(item)")
+    }
+    
+    func messageAgentDidReceiveSendMessage(recipient: MessageAgentContact, header: Downstream.Header) -> String? {
+        guard MFMessageComposeViewController.canSendText() else { return nil }
+        
+        let messageComposeVC = MFMessageComposeViewController()
+        messageComposeVC.recipients = [recipient.number!]
+        messageComposeVC.body = recipient.message?.text
+        
+        present(messageComposeVC, animated: true, completion: nil)
+        
+        return nil
     }
 }

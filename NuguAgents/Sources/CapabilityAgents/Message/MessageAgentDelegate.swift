@@ -30,6 +30,9 @@ public protocol MessageAgentDelegate: class {
     func messageAgentRequestContext() -> MessageAgentContext?
     
     /// Called method when a directive 'SendCandidates' is received.
+    ///
+    /// You should send an `Event` which indicates display status or candidate information.
+    /// 
     /// - Parameters:
     ///   - item: The item of `MessageCandidatesItem`
     ///   - header: The header of the originally handled directive.

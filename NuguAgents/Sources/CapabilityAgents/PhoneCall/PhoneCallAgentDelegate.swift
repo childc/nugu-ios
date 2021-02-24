@@ -32,6 +32,14 @@ public protocol PhoneCallAgentDelegate: class {
     func phoneCallAgentRequestContext() -> PhoneCallContext
     
     /// Called method when a directive 'SendCandidates' is received.
+    ///
+    /// To send an information about the candidates, You should call this API below when this method called.
+    /// ~~~
+    /// phoneCallAgent.requestSendCandidates()
+    /// ~~~
+    ///
+    /// - seeAlso: `PhoneCallAgent.requestSendCandidates`
+    ///
     /// - Parameters:
     ///   - item: The item of `PhoneCallCandidatesItem`
     ///   - header: The header of the originally handled directive.
@@ -42,6 +50,6 @@ public protocol PhoneCallAgentDelegate: class {
     ///   - callType: Types of phone calls
     ///   - recipient: An contact about the recipient(callee)
     ///   - header: The header of the originally handled directive.
-    /// - Returns: If have an error, the error-code is returned, otherwise it returns `nil`.
+    /// - Returns: If you have an error during making a phone call or received unsupported `PhoneCallType`,return the `PhoneCallErrorCode`. otherwise, return `nil`.
     func phoneCallAgentDidReceiveMakeCall(callType: PhoneCallType, recipient: PhoneCallPerson, header: Downstream.Header) -> PhoneCallErrorCode?
 }
